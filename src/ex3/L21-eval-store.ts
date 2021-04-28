@@ -2,7 +2,7 @@
 // L2 with mutation (set!) and env-box model
 // Direct evaluation of letrec with mutation, define supports mutual recursion.
 
-import { map, reduce, repeat, zipWith } from "ramda";
+import { either, map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
          parseL21Exp, DefineExp, isSetExp} from "./L21-ast";
@@ -10,7 +10,7 @@ import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyE
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
-import { Result, bind, safe2, mapResult, makeFailure, makeOk } from "../shared/result";
+import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either} from "../shared/result";
 import { parse as p } from "../shared/parser";
 
 // ========================================================
@@ -87,10 +87,10 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 
     
     return bind(vals, (vals: Value[]) => {
-        const addresses: number[] = map((val: Value) =>
-            isVarRef(val) ? bind(applyEnv(env, val.var), (x: number) => x) :
-            Array.length(extendStore(theStore, val))-1
-         ,vals); //added this , check if val is ref to another func
+        const addresses = map((val: Value) =>
+            isVarRef(val)? result_either((applyEnv( env, val.var)), (address)=>address, (msg)=> 0):
+            extendStore(theStore, val).vals.length -1
+         ,vals); //added this , check if val is ref to another func or new val to store
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
