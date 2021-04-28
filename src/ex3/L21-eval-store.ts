@@ -51,6 +51,7 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
+    //! change it, storage doesn't updated
     const addresses: number[] = map((arg: Value) => 
                                     isVarRef(arg) ? result_either(applyEnv(proc.env, arg.var), (address) => address, (msg) => 0) :
                                     extendStore(theStore, arg).vals.length - 1
@@ -105,7 +106,7 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
             }
             else{
                 theStore = extendStore(theStore, val)
-
+                return theStore.vals.length - 1
             }
             const addrInStore = isVarRef(val)? (applyEnv( env, val.var):
             makeOk(extendStore(theStore, val).vals.length -1)
