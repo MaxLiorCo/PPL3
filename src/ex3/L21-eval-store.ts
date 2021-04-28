@@ -50,7 +50,9 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
-    const addresses: number[] = ...
+    const addresses: number[] = map((arg: Value) => 
+                                    isVarRef(arg) ? proc.env
+                                    ,args)
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env)
     return evalSequence(proc.body, newEnv);
 }
@@ -85,8 +87,8 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 
     
     return bind(vals, (vals: Value[]) => {
-        const addresses = map((val: Value) =>
-            isVarRef(val)? applyEnv( env, val.var):
+        const addresses: number[] = map((val: Value) =>
+            isVarRef(val) ? bind(applyEnv(env, val.var), (x: number) => x) :
             Array.length(extendStore(theStore, val))-1
          ,vals); //added this , check if val is ref to another func
         const newEnv = makeExtEnv(vars, addresses, env)
