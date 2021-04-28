@@ -1,4 +1,4 @@
-import { add, map, zipWith } from "ramda";
+import { add, comparator, map, zipWith } from "ramda";
 import { Value } from './L21-value-store';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
 
@@ -18,11 +18,13 @@ export interface Store {
 }
 
 export const isStore = (x: any): x is Store => x.tag === "Store";                       // Added this
-export const makeEmptyStore = (): Store => ({tag: "Store", vals: makeBox([])});         // Added this, may work
+export const makeEmptyStore = (): Store => ({tag: "Store", vals: []});                  // Added this, may work
 export const theStore: Store = makeEmptyStore();                                        // Added this
 
-export const extendStore = (s: Store, val: Value): Store =>                             // Added this
-    ({tag: "Store", vals: s.vals.concat([makeBox(val)])});
+export const extendStore = (s: Store, val: Value): Store => {
+    s.vals = s.vals.concat([makeBox(val)]);
+    return s;
+}
 
 
 export const applyStore = (store: Store, address: number): Result<Value> =>             // Added this, address may be changed...

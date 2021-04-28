@@ -6,7 +6,7 @@ import { either, is, map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
          parseL21Exp, DefineExp, isSetExp, SetExp} from "./L21-ast";
-import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyEnvStore, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
@@ -72,11 +72,12 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => {
     if (unbox(theGlobalEnv.vars).includes(def.var.var)) {
-            return makeFailure(`Var ${def.var.var} already exists!`);
+        return makeFailure(`Var ${def.var.var} already exists!`);
     }
     else {
-        theGlobalEnv.vars.
-        return applicativeEval(def.val, theGlobalEnv);
+        extendStore(theStore, result_either(applicativeEval(def.val, theGlobalEnv), (x: Value) => x, (msg) => 0));
+        globalEnvAddBinding(def.var.var, theStore.vals.length - 1);
+        return evalSequence(exps, theGlobalEnv);
     }
 
 }
