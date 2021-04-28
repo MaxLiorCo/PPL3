@@ -12,6 +12,7 @@ import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either} from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { unbox } from "../shared/box";
 
 // ========================================================
 // Eval functions
@@ -69,8 +70,17 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
     first;
 
-const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>{}
-    // complete
+const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => {
+    if (unbox(theGlobalEnv.vars).includes(def.var.var)) {
+            return makeFailure(`Var ${def.var.var} already exists!`);
+    }
+    else {
+        theGlobalEnv.vars.
+        return applicativeEval(def.val, theGlobalEnv);
+    }
+
+}
+
 
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
