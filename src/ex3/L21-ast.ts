@@ -73,9 +73,9 @@ export interface SetExp {tag: "SetExp"; var: VarRef; exp: CExp; }
 export interface LitExp {tag: "LitExp"; val: SExpValue; }
 
 // To help parser - define a type for reserved key words.
-export type SpecialFormKeyword = "lambda" | "let" | "if";
+export type SpecialFormKeyword = "lambda" | "let" | "if" | "set!";
 const isSpecialFormKeyword = (x: string): x is SpecialFormKeyword =>
-    ["if", "lambda", "let", "quote"].includes(x);
+    ["if", "lambda", "let", "quote", "set!"].includes(x);
 
 /*
     ;; <prim-op>  ::= + | - | * | / | < | > | = | not | and | or | eq? | string=?
@@ -187,6 +187,7 @@ export const parseL21SpecialForm = (op: SpecialFormKeyword, params: Sexp[]): Res
     op === "if" ? parseIfExp(params) :
     op === "lambda" ? parseProcExp(first(params), rest(params)) :
     op === "let" ? parseLetExp(first(params), rest(params)) :
+    op === "set!" ? parseSetExp(params) :
     op;
 
 export const parseDefine = (params: Sexp[]): Result<DefineExp> =>
@@ -246,11 +247,12 @@ const parseBindings = (bindings: Sexp): Result<Binding[]> => {
 const parseLetExp = (bindings: Sexp, body: Sexp[]): Result<LetExp> =>
     safe2((bindings: Binding[], body: CExp[]) => makeOk(makeLetExp(bindings, body)))
         (parseBindings(bindings), mapResult(parseL21CExp, body));
-        const parseSetExp = (params: Sexp[]): Result<SetExp> =>
-        isEmpty(params) ? makeFailure("set! missing 2 arguments") :
-        isEmpty(rest(params)) ? makeFailure("set! missing 1 argument") :
-        ! isEmpty(rest(rest(params))) ? makeFailure("set! has too many arguments") :
-        parseGoodSetExp(first(params), second(params));
+
+const parseSetExp = (params: Sexp[]): Result<SetExp> =>
+    isEmpty(params) ? makeFailure("set! missing 2 arguments") :
+    isEmpty(rest(params)) ? makeFailure("set! missing 1 argument") :
+    ! isEmpty(rest(rest(params))) ? makeFailure("set! has too many arguments") :
+    parseGoodSetExp(first(params), second(params));
     
     const parseGoodSetExp = (variable: Sexp, val: Sexp): Result<SetExp> =>
         ! isIdentifier(variable) ? makeFailure("First arg of set! must be an identifier") :
@@ -319,5 +321,5 @@ export const unparse = (exp: Parsed): string =>
     isLetExp(exp) ? unparseLetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparse(exp.val)})` :
     isProgram(exp) ? `(L21 ${unparseLExps(exp.exps)})` :
-    isSetExp(exp) ? "TODO" :
+    isSetExp(exp) ? `(set! ${exp.var.var} ${unparse(exp.exp)})` :
     exp;
