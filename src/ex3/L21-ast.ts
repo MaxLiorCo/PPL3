@@ -68,7 +68,7 @@ export interface ProcExp {tag: "ProcExp"; args: VarDecl[], body: CExp[]; }
 export interface Binding {tag: "Binding"; var: VarDecl; val: CExp; }
 export interface LetExp {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 // L2.1
-export interface SetExp {tag: "SetExp"; var: VarRef; exp: CExp; }
+export interface SetExp {tag: "SetExp"; var: VarRef; val: CExp; }
 // L3
 export interface LitExp {tag: "LitExp"; val: SExpValue; }
 
@@ -112,8 +112,8 @@ export const makeBinding = (v: string, val: CExp): Binding =>
 export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
     ({tag: "LetExp", bindings: bindings, body: body});
 // L2.1
-export const makeSetExp = (v: VarRef, exp: CExp): SetExp =>
-    ({tag: "SetExp", var: v, exp: exp});
+export const makeSetExp = (v: VarRef, val: CExp): SetExp =>
+    ({tag: "SetExp", var: v, val: val});
 // L3
 export const makeLitExp = (val: SExpValue): LitExp =>
     ({tag: "LitExp", val: val});
@@ -321,5 +321,5 @@ export const unparse = (exp: Parsed): string =>
     isLetExp(exp) ? unparseLetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparse(exp.val)})` :
     isProgram(exp) ? `(L21 ${unparseLExps(exp.exps)})` :
-    isSetExp(exp) ? `(set! ${exp.var.var} ${unparse(exp.exp)})` :
+    isSetExp(exp) ? `(set! ${exp.var.var} ${unparse(exp.val)})` :
     exp;
