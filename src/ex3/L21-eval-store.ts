@@ -51,6 +51,7 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
+    //! change it, storage doesn't updated
     const addresses: number[] = map((arg: Value) => 
                                     isVarRef(arg) ? result_either(applyEnv(proc.env, arg.var), (address) => address, (msg) => 0) :
                                     extendStore(theStore, arg).vals.length - 1
@@ -99,20 +100,37 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
 
     
     return bind(vals, (vals: Value[]) => {
-        const addresses = map((val: Value) =>
-            isVarRef(val)? result_either((applyEnv( env, val.var)), (address)=>address, (msg)=> 0):
-            extendStore(theStore, val).vals.length -1
-         ,vals); //added this , check if val is ref to another func or new val to store at the end
+        const addresses = map((val: Value) =>{
+            if(isVarRef(val)){
+                const addrInStore = applyEnv( env, val.var)
+                return isOk(addrInStore)? addrInStore.value : -1 // ref not found in Env
+            }
+            else{
+                theStore = extendStore(theStore, val)
+                return theStore.vals.length - 1
+            }
+            const addrInStore = isVarRef(val)? (applyEnv( env, val.var):
+            makeOk(extendStore(theStore, val).vals.length -1)
+         ,vals);
+        } //added this , check if val is ref to another func or new val to store at the end
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
 }
 
+//! added this
 const evalSet = (exp: SetExp, env: Env): Result<Value> => {
     const addrInStore = applyEnv( env, exp.var.var)
     const valueToSet = applicativeEval(exp.val, env)
-    return isOk(addrInStore) && isOk(valueToSet)? makeOk(setStore(theStore, addrInStore.value, valueToSet.value)) : makeFailure("set! failed. no env found or value isn't applicable")
+    return isOk(addrInStore) && isOk(valueToSet)? makeOk(setStore(theStore, addrInStore.value, valueToSet.value)) : makeFailure("'set!' failed. no env found or value isn't applicable")
 }
 // (let ((x 4) (y (lambda ...)) (z a))    (*x y))         a exists outside
 // vars = [x, y, z]
 // vals = [4, <closure>, a]
+
+// junk:
+// const addresses = map((val: Value) =>{
+//     const addrInStore = isVarRef(val)? result_either((applyEnv( env, val.var)), (address)=>address, (msg)=> 0):
+//     extendStore(theStore, val).vals.length -1
+//  ,vals);
+// }
