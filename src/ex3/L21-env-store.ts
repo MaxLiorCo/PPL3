@@ -72,11 +72,15 @@ export const applyEnv = (env: Env, v: string): Result<number> =>
     isGlobalEnv(env) ? applyGlobalEnv(env, v) :
     applyExtEnv(env, v);
 
-const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => 
-    map((v: Box<string[]>) => unbox(v) ,env.vars) 
+const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> =>                       // Added this
+    unbox(env.vars).includes(v) ? makeOk(unbox(env.addresses)[unbox(env.vars).indexOf(v)]) :
+    makeFailure(`Variable ${v} does not exist in the global enviroment.`);
 
-export const globalEnvAddBinding = (v: string, addr: number): void =>
-    // Complete
+
+export const globalEnvAddBinding = (v: string, addr: number): void => {                     // Added this
+    setBox(theGlobalEnv.vars, unbox(theGlobalEnv.vars).concat([v]));
+    setBox(theGlobalEnv.addresses, unbox(theGlobalEnv.addresses).concat([addr]));
+}
 
 const applyExtEnv = (env: ExtEnv, v: string): Result<number> =>
     env.vars.includes(v) ? makeOk(env.addresses[env.vars.indexOf(v)]) :
