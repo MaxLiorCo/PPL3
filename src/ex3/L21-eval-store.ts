@@ -51,7 +51,8 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
     const addresses: number[] = map((arg: Value) => 
-                                    isVarRef(arg) ? proc.env
+                                    isVarRef(arg) ? result_either(applyEnv(proc.env, arg.var), (address) => address, (msg) => 0) :
+                                    extendStore(theStore, arg).vals.length - 1
                                     ,args)
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env)
     return evalSequence(proc.body, newEnv);
