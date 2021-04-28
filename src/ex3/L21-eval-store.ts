@@ -2,15 +2,15 @@
 // L2 with mutation (set!) and env-box model
 // Direct evaluation of letrec with mutation, define supports mutual recursion.
 
-import { either, map, reduce, repeat, zipWith } from "ramda";
+import { either, is, map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
-         parseL21Exp, DefineExp, isSetExp} from "./L21-ast";
+         parseL21Exp, DefineExp, isSetExp, SetExp} from "./L21-ast";
 import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyEnvStore, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
-import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either} from "../shared/result";
+import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either, isOk} from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { unbox } from "../shared/box";
 
@@ -22,14 +22,14 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isStrExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
-    isVarRef(exp) ? applyEnv(env, exp.var): //? I added applyEnv
+    isVarRef(exp) ? applyEnv(env, exp.var): //! added this
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
     isLetExp(exp) ? evalLet(exp, env) :
     isAppExp(exp) ? safe2((proc: Value, args: Value[]) => applyProcedure(proc, args))
                         (applicativeEval(exp.rator, env), mapResult((rand: CExp) => applicativeEval(rand, env), exp.rands)) :
-    isSetExp(exp)? makeOk(4): //?change to
+    isSetExp(exp)? evalSet(exp, env): //! added this
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
@@ -101,11 +101,17 @@ const evalLet = (exp: LetExp, env: Env): Result<Value> => {
         const addresses = map((val: Value) =>
             isVarRef(val)? result_either((applyEnv( env, val.var)), (address)=>address, (msg)=> 0):
             extendStore(theStore, val).vals.length -1
-         ,vals); //added this , check if val is ref to another func or new val to store
+         ,vals); //added this , check if val is ref to another func or new val to store at the end
         const newEnv = makeExtEnv(vars, addresses, env)
         return evalSequence(exp.body, newEnv);
     })
 }
-// (let ((x 4) (y (lambda ...)) (z a))    (*x y))           a exists outside
+
+const evalSet = (exp: SetExp, env: Env): Result<Value> => {
+    const addrInStore = applyEnv( env, exp.var.var)
+    const valueToSet = applicativeEval(exp.val, env)
+    return isOk(addrInStore) && isOk(valueToSet)? makeOk(setStore(theStore, addrInStore.value, valueToSet.value)) : makeFailure("set! failed. no env found or value isn't applicable")
+}
+// (let ((x 4) (y (lambda ...)) (z a))    (*x y))         a exists outside
 // vars = [x, y, z]
 // vals = [4, <closure>, a]
