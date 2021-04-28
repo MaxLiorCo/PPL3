@@ -12,6 +12,7 @@ import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either, isOk} from "../shared/result";
 import { parse as p } from "../shared/parser";
+import { unbox } from "../shared/box";
 
 // ========================================================
 // Eval functions
@@ -51,7 +52,8 @@ const applyProcedure = (proc: Value, args: Value[]): Result<Value> =>
 const applyClosure = (proc: Closure, args: Value[]): Result<Value> => {
     const vars = map((v: VarDecl) => v.var, proc.params);
     const addresses: number[] = map((arg: Value) => 
-                                    isVarRef(arg) ? proc.env
+                                    isVarRef(arg) ? result_either(applyEnv(proc.env, arg.var), (address) => address, (msg) => 0) :
+                                    extendStore(theStore, arg).vals.length - 1
                                     ,args)
     const newEnv: ExtEnv = makeExtEnv(vars, addresses, proc.env)
     return evalSequence(proc.body, newEnv);
@@ -68,8 +70,17 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
     isCExp(first) ? bind(applicativeEval(first, env), _ => evalSequence(rest, env)) :
     first;
 
-const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> =>{}
-    // complete
+const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => {
+    if (unbox(theGlobalEnv.vars).includes(def.var.var)) {
+            return makeFailure(`Var ${def.var.var} already exists!`);
+    }
+    else {
+        theGlobalEnv.vars.
+        return applicativeEval(def.val, theGlobalEnv);
+    }
+
+}
+
 
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
