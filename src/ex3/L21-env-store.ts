@@ -22,6 +22,7 @@ export const makeEmptyStore = (): Store => ({tag: "Store", vals: []});          
 export const theStore: Store = makeEmptyStore();                                        // Added this
 
 export const extendStore = (s: Store, val: Value): Store => {
+    //setBox(s.vals, unbox(s.vals.concat([makeBox(val)])));
     s.vals = s.vals.concat([makeBox(val)]);
     return s;
 }
@@ -74,14 +75,16 @@ export const applyEnv = (env: Env, v: string): Result<number> =>
     isGlobalEnv(env) ? applyGlobalEnv(env, v) :
     applyExtEnv(env, v);
 
-const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> =>                       // Added this
+const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> => 
     unbox(env.vars).includes(v) ? makeOk(unbox(env.addresses)[unbox(env.vars).indexOf(v)]) :
     makeFailure(`Variable ${v} does not exist in the global enviroment.`);
-
+                    
 
 export const globalEnvAddBinding = (v: string, addr: number): void => {                     // Added this
     setBox(theGlobalEnv.vars, unbox(theGlobalEnv.vars).concat([v]));
     setBox(theGlobalEnv.addresses, unbox(theGlobalEnv.addresses).concat([addr]));
+    console.log(theGlobalEnv.vars[0])
+    console.log(theGlobalEnv.addresses[0])
 }
 
 const applyExtEnv = (env: ExtEnv, v: string): Result<number> =>

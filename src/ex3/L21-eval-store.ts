@@ -5,11 +5,11 @@
 import { either, is, map, reduce, repeat, zipWith } from "ramda";
 import { isBoolExp, isCExp, isLitExp, isNumExp, isPrimOp, isStrExp, isVarRef,
          isAppExp, isDefineExp, isIfExp, isLetExp, isProcExp, Binding, VarDecl, CExp, Exp, IfExp, LetExp, ProcExp, Program,
-         parseL21Exp, DefineExp, isSetExp, SetExp} from "./L21-ast";
-import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, applyEnvStore, theGlobalEnv, globalEnvAddBinding, theStore } from "./L21-env-store";
+         parseL21Exp, DefineExp, isSetExp, SetExp, parseL21} from "./L21-ast";
+import { applyEnv, makeExtEnv, Env, Store, setStore, extendStore, ExtEnv, theGlobalEnv, globalEnvAddBinding, theStore, applyStore } from "./L21-env-store";
 import { isClosure, makeClosure, Closure, Value } from "./L21-value-store";
 import { applyPrimitive } from "./evalPrimitive-store";
-import { first, rest, isEmpty } from "../shared/list";
+import { first, rest, isEmpty, cons } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either, isOk} from "../shared/result";
 import { parse as p } from "../shared/parser";
 import { unbox } from "../shared/box";
@@ -22,7 +22,7 @@ const applicativeEval = (exp: CExp, env: Env): Result<Value> =>
     isBoolExp(exp) ? makeOk(exp.val) :
     isStrExp(exp) ? makeOk(exp.val) :
     isPrimOp(exp) ? makeOk(exp) :
-    isVarRef(exp) ? applyEnv(env, exp.var): //! added this
+    isVarRef(exp) ? bind(applyEnv(env, exp.var), (x: number) => applyStore(theStore, x)): //! added this
     isLitExp(exp) ? makeOk(exp.val as Value) :
     isIfExp(exp) ? evalIf(exp, env) :
     isProcExp(exp) ? evalProc(exp, env) :
@@ -73,11 +73,13 @@ const evalCExps = (first: Exp, rest: Exp[], env: Env): Result<Value> =>
 
 const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => {
     if (unbox(theGlobalEnv.vars).includes(def.var.var)) {
-            return makeFailure(`Var ${def.var.var} already exists!`);
+            return makeFailure(`Var '${def.var.var}' already exists!`);
     }
     else {
-        theGlobalEnv.vars.
-        return applicativeEval(def.val, theGlobalEnv);
+        let defBodyEval = applicativeEval(def.val, theGlobalEnv);
+        bind(defBodyEval, (x: Value) => makeOk(extendStore(theStore, x)));          // Adding the value to the store, to the last cell
+        globalEnvAddBinding(def.var.var, theStore.vals.length - 1);
+        return evalSequence(exps, theGlobalEnv);
     }
 
 }

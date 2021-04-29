@@ -1,7 +1,7 @@
 import { PrimOp } from "./L21-ast";
 import { Value, isSymbolSExp, isEmptySExp, isCompoundSExp, CompoundSExp, makeCompoundSExp, EmptySExp, makeEmptySExp } from "./L21-value-store";
 import { Result, makeOk, makeFailure } from "../shared/result";
-import { allT, first, rest } from "../shared/list";
+import { allT, cons, first, rest } from "../shared/list";
 import { isNumber, isString, isBoolean } from "../shared/type-predicates";
 import { reduce } from "ramda";
 
@@ -29,6 +29,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
     makeFailure("Bad primitive op " + proc.op);
+    
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
