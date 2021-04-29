@@ -134,3 +134,5 @@ const evalSet = (exp: SetExp, env: Env): Result<Value> => {
 //     extendStore(theStore, val).vals.length -1
 //  ,vals);
 // }
+
+console.log(bind(parseL21("(L21 (define x 1) (define y (+ x x)) (* y y))"), evalProgram))
