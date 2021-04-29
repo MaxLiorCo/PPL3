@@ -12,7 +12,7 @@ import { applyPrimitive } from "./evalPrimitive-store";
 import { first, rest, isEmpty, cons } from "../shared/list";
 import { Result, bind, safe2, mapResult, makeFailure, makeOk, either as result_either, isOk} from "../shared/result";
 import { parse as p } from "../shared/parser";
-import { unbox } from "../shared/box";
+import { makeBox, unbox } from "../shared/box";
 
 // ========================================================
 // Eval functions
@@ -81,14 +81,19 @@ const evalDefineExps = (def: DefineExp, exps: Exp[]): Result<Value> => {
         globalEnvAddBinding(def.var.var, theStore.vals.length - 1);
         return evalSequence(exps, theGlobalEnv);
     }
-
 }
 
 
 // Main program
 // L2-BOX @@ Use GE instead of empty-env
-export const evalProgram = (program: Program): Result<Value> =>
-    evalSequence(program.exps, theGlobalEnv);
+export const evalProgram = (program: Program): Result<Value> => {
+    const evaluated = evalSequence(program.exps, theGlobalEnv);
+    theGlobalEnv.vars = makeBox([]);
+    theGlobalEnv.addresses = makeBox([]);
+    theStore.vals = [];
+    return evaluated;
+}
+
 
 export const evalParse = (s: string): Result<Value> =>
     bind(bind(p(s), parseL21Exp), (exp: Exp) => evalSequence([exp], theGlobalEnv));
@@ -98,8 +103,6 @@ export const evalParse = (s: string): Result<Value> =>
 const evalLet = (exp: LetExp, env: Env): Result<Value> => {
     const vals = mapResult((v: CExp) => applicativeEval(v, env), map((b: Binding) => b.val, exp.bindings));
     const vars = map((b: Binding) => b.var.var, exp.bindings);
-
-    
     return bind(vals, (vals: Value[]) => {
         const addresses = map((val: Value) =>{
             if(isVarRef(val)){
@@ -124,15 +127,3 @@ const evalSet = (exp: SetExp, env: Env): Result<Value> => {
     const valueToSet = applicativeEval(exp.val, env)
     return isOk(addrInStore) && isOk(valueToSet)? makeOk(setStore(theStore, addrInStore.value, valueToSet.value)) : makeFailure("'set!' failed. no env found or value isn't applicable")
 }
-// (let ((x 4) (y (lambda ...)) (z a))    (*x y))         a exists outside
-// vars = [x, y, z]
-// vals = [4, <closure>, a]
-
-// junk:
-// const addresses = map((val: Value) =>{
-//     const addrInStore = isVarRef(val)? result_either((applyEnv( env, val.var)), (address)=>address, (msg)=> 0):
-//     extendStore(theStore, val).vals.length -1
-//  ,vals);
-// }
-
-console.log(bind(parseL21("(L21 (define x 1) (define y (+ x x)) (* y y))"), evalProgram))

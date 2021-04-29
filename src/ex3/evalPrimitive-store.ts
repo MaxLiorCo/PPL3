@@ -1,14 +1,12 @@
 import { PrimOp } from "./L21-ast";
 import { Value, isSymbolSExp, isEmptySExp, isCompoundSExp, CompoundSExp, makeCompoundSExp, EmptySExp, makeEmptySExp } from "./L21-value-store";
 import { Result, makeOk, makeFailure } from "../shared/result";
-import { allT, cons, first, rest } from "../shared/list";
+import { allT, first, rest } from "../shared/list";
 import { isNumber, isString, isBoolean } from "../shared/type-predicates";
 import { reduce } from "ramda";
 
-export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> => {
-    console.log(proc);
-    console.log(args);
-    return proc.op === "+" ? (allT(isNumber, args) ? makeOk(reduce((x: number, y: number) => x + y, 0, args)) : makeFailure(`+ expects numbers only. Got ${JSON.stringify(args, null, 2)}`)) :
+export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
+    proc.op === "+" ? (allT(isNumber, args) ? makeOk(reduce((x: number, y: number) => x + y, 0, args)) : makeFailure(`+ expects numbers only. Got ${JSON.stringify(args, null, 2)}`)) :
     proc.op === "-" ? minusPrim(args) :
     proc.op === "*" ? (allT(isNumber, args) ? makeOk(reduce((x: number, y: number) => x * y, 1, args)) : makeFailure("* expects numbers only")) :
     proc.op === "/" ? divPrim(args) :
@@ -31,7 +29,6 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> => {
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
     makeFailure("Bad primitive op " + proc.op);
-}
 
 
 const minusPrim = (args: Value[]): Result<number> => {

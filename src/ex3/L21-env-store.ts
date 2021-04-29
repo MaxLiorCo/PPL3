@@ -1,4 +1,3 @@
-import { add, comparator, map, zipWith } from "ramda";
 import { Value } from './L21-value-store';
 import { Result, makeFailure, makeOk, bind, either } from "../shared/result";
 
@@ -83,8 +82,6 @@ const applyGlobalEnv = (env: GlobalEnv, v: string): Result<number> =>
 export const globalEnvAddBinding = (v: string, addr: number): void => {                     // Added this
     setBox(theGlobalEnv.vars, unbox(theGlobalEnv.vars).concat([v]));
     setBox(theGlobalEnv.addresses, unbox(theGlobalEnv.addresses).concat([addr]));
-    console.log(theGlobalEnv.vars[0])
-    console.log(theGlobalEnv.addresses[0])
 }
 
 const applyExtEnv = (env: ExtEnv, v: string): Result<number> =>
